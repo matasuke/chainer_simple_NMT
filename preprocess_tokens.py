@@ -1,108 +1,268 @@
+"""
+This module preprocess text corpus.
+
+it pre-process corpus data into processed tokens.
+mainly it tokenize sentences, lower characters, remove suffix and replace all digits with 0.
+"""
+
 import argparse
+import collections
 import pickle
+import re
+from itertools import dropwhile
+
 from tqdm import tqdm
 
-class Tokenizer:
-    def __init__(self, lang='jp', to_lower=True, remove_suffix=True):
+
+class Tokenizer(object):
+    """
+    preprocess sentences into pieces.
+
+    This class split sentences into morphs with
+    prossesing of lower case, remove suffix and so on.
+
+    Attributes
+    ----------
+    lang: str
+        language to be processed.
+    tokenize: bool
+        tokenize sentences into pieces.
+        set false if input sentence is already tokenized.
+    to_lower: bool
+        lower input sentences or not.
+    remove_suffix: bool
+        whether or not remove characters like [.,!?"'";:。、].
+    replace_digits: bool
+        whether or not replace digits with 0.
+    removed_char: re
+        regular expression to find
+        some special characters that should be deleted
+    split_digits: re
+        regular expression to find digits
+    """
+
+    __slots__ = [
+        'lang',
+        'tokenize',
+        'to_lower',
+        'remove_suffix',
+        'replace_digits',
+        'removed_char',
+        'split_digits',
+        'ja_tokenizer',
+        'segmenter'
+    ]
+
+    def __init__(
+            self,
+            lang='jp',
+            tokenize=True,
+            to_lower=True,
+            remove_suffix=True,
+            replace_digits=True
+    ):
+        """
+        initialize parameters which is used for preprocessing sentences.
+
+        Parameters
+        ----------
+        lang: str
+            language to be processed.
+            it should be one of ja, en, ch.
+        tokenize: bool
+            tokenize sentences into pieces.
+            set false if input sentence is already tokenized.
+        to_lower:
+            lower input sentences or not.
+        remove_suffix: bool
+            whether or not remove characters like [.,!?"'";:。、].
+        replace_digits: bool
+            whether or not replace digits with 0.
+        """
         self.lang = lang
+        self.tokenize = tokenize
         self.to_lower = to_lower
         self.remove_suffix = remove_suffix
+        self.replace_digits = replace_digits
+        self.removed_char = re.compile(r'[.,!?"\'\";:。、]')
+        self.split_digits = re.compile(r'\d')
 
-        if lang == 'jp':
-            from janome.tokenizer import Tokenizer
-            self.t = Tokenizer()
-            self.segmenter = lambda sentence: list(token.surface for token in self.t.tokenize(sentence))
+        if self.tokenize:
+            if lang == 'jp':
+                import janome
+                self.ja_tokenizer = janome.tokenizer.Tokenizer()
+                self.segmenter = lambda sen: list(
+                    token.surface for token in self.ja_tokenizer.tokenize(sen)
+                )
 
-        elif lang == 'ch':
-            import jieba
-            self.segmenter = lambda sentence: list(jieba.cut(sentence))
+            elif lang == 'ch':
+                import jieba
+                self.segmenter = lambda sen: list(jieba.cut(sen))
 
-        elif lang == 'en':
-            import nltk
-            self.segmenter = lambda sentence: list(nltk.word_tokenize(sentence))
+            elif lang == 'en':
+                import nltk
+                self.segmenter = lambda sen: list(nltk.word_tokenize(sen))
 
-    def pre_process(self, sentence):
+    def pre_process(self, sen):
+        """
+        pre_process sentences into pieces.
+
+        This function pre-process sentences into tokens
+        with lower_case, remove some characters and replace all digits into 0.
+
+        Parameters
+        ----------
+        sen: str
+            sentences to be processed.
+
+        Returns
+        -------
+        self.segmenter(sen) or sen.split()
+            if self.tokenize == True, then return
+            tokenized sentences with some processing.
+            if not, then return splitted sentences.
+        """
         if self.to_lower:
-            sentence = sentence.strip().lower()
-        if self.remove_suffix and sentence[-1] in ('.', '。'):
-            sentence = sentence[0: -1]
-        return self.segmenter(sentence)
+            sen = sen.strip().lower()
+
+        if self.remove_suffix:
+            sen = self.removed_char.sub('', sen)
+
+        if self.replace_digits:
+            sen = self.split_digits.sub('0', sen)
+
+        return self.segmenter(sen) if self.tokenize else sen.split()
+
 
 def token2index(tokens, word_ids):
-    return [ word_ids[token] if token in word_ids else word_ids['<UNK>'] for token in tokens ]
+    """
+    transform tokens into word_ids.
+
+    Parameters
+    ----------
+    tokens: list
+        list of tokens
+    word_ids: list
+        word_ids list
+
+    Returns
+    -------
+    list of word ids
+    """
+    return [word_ids[token] if token in word_ids
+            else word_ids['<UNK>'] for token in tokens]
+
+
+# def index2token(encoded_tokens, word_ids):
+#    pass
+
 
 def load_pickle(in_file):
+    """load pickle file."""
     with open(in_file, 'rb') as f:
         row_data = pickle.load(f)
     return row_data
 
+
 def save_pickle(in_file, out_file):
+    """save pickle file."""
     with open(out_file, 'wb') as f:
         pickle.dump(in_file, f, pickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-in_path', type=str)
-    parser.add_argument('-out_path', type=str)
-    parser.add_argument('--lang', type=str, choices=['jp', 'en', 'ch'])
-    parser.add_argument('--tolower', action='store_true')
-    parser.add_argument('--remove_suffix', action='store_true')
-    parser.add_argument('--cutoff', type=int, default=5)
-    parser.add_argument('--tonumpy', action='store_true')
+    parser.add_argument('in_path', type=str,
+                        help="input path to corpas")
+    parser.add_argument('out_path', type=str,
+                        help="output path to result")
+    parser.add_argument('--tokenize', action='store_false',
+                        help='disable tokenize in_path file')
+    parser.add_argument('--lang', type=str, choices=['jp', 'en', 'ch'],
+                        help="language to be processed")
+    parser.add_argument('--tolower', action='store_false',
+                        help="disable lower all characters for all sentences.")
+    parser.add_argument('--remove_suffix', action='store_false',
+                        help="disable remove all suffix like ?,!.")
+    parser.add_argument('--replace_digits', action='store_false',
+                        help="disable replace digits to 0 for all sentences.")
+    parser.add_argument('--cutoff', type=int, default=5,
+                        help="cutoff words less than the number digignated")
+    parser.add_argument('--vocab_size', type=int, default=0,
+                        help='vocabrary size')
     args = parser.parse_args()
 
-    tokenizer = Tokenizer(lang=args.lang, to_lower=args.tolower, remove_suffix=args.remove_suffix)
+    tokenizer = Tokenizer(
+        lang=args.lang,
+        tokenize=args.tokenize,
+        to_lower=args.tolower,
+        remove_suffix=args.remove_suffix
+    )
 
     sentence_idx = 0
     sentences = []
 
-    word_counter = {}
-    word_ids = {
-        '<SOS>': 0,
-        '<EOS>': 1,
-        '<UNK>': 2,
-    }
-    
+    word_counter = collections.Counter()
+    word_ids = collections.Counter({
+        '<UNK>': 0,
+        '<SOS>': 1,
+        '<EOS>': 2
+    })
+
+    # read files
     f = open(args.in_path, 'r')
     lines = f.readlines()
-    #tokenize sentences
+
+    # tokenize sentences
     for line in tqdm(lines):
-        sentence_tokens = ['<SOS>']
-        sentence_tokens += tokenizer.pre_process(line)
-        sentence_tokens += ['<EOS>']
-        
-        sentences.append({'sentence': line.strip(), 'tokens': sentence_tokens, 'encoded_sentence': sentence_tokens, 'sentence_idx': sentence_idx})
+        tokens = []
+        tokens += ['<SOS>']
+        tokens += tokenizer.pre_process(line)
+        tokens += ['<EOS>']
+
+        sentences.append({
+            'sentence': line.strip(),
+            'tokens': tokens,
+            'encoded_tokens': tokens,
+            'sentence_idx': sentence_idx
+        })
+
         sentence_idx += 1
 
+        # add each word to word_counter
+        word_counter.update(tokens)
 
-    #create vocabrary dict
-    for sentence in tqdm(sentences):
-        tokens = sentence['tokens']
-
-        for token in tokens:
-            if token in word_counter:
-                word_counter[token] += 1
-            else:
-                word_counter[token] = 1
-    
     print("total distinct words:{0}".format(len(word_counter)))
     print('top 30 frequent words:')
-    sorted_words = sorted(word_counter.items(), key=lambda x: x[1], reverse=True)
-    for word, num in sorted_words[:30]:
+    for word, num in word_counter.most_common(30):
         print('{0} - {1}'.format(word, num))
 
-    for word, num in tqdm(word_counter.items()):
-        if num > args.cutoff and word not in word_ids:
+    # delete words less than cutoff
+    for word, num in dropwhile(
+            lambda word_num: word_num[1] >= args.cutoff, word_counter.most_common()
+    ):
+        del word_counter[word]
+
+    # pick up words of vocab_size
+    # minus 1 because unk is included.
+    word_counter = word_counter.most_common(
+        args.vocab_size-1 if args.vocab_size else len(word_counter)
+    )
+
+    for word, num in tqdm(word_counter):
+        if word not in word_ids:
             word_ids[word] = len(word_ids)
 
-    print('total distinct words except words less than {0}: {1}'.format(args.cutoff, len(word_ids)))
+    print('the number of words more than {0}: {1}'.format(args.cutoff, len(word_ids)))
 
-    #encoding
+    # encoding
     for sentence in tqdm(sentences):
-        sentence['encoded_sentence'] = token2index(sentence['encoded_sentence'], word_ids)
+        sentence['encoded_tokens'] = \
+            token2index(sentence['encoded_tokens'], word_ids)
 
     output_dataset = {}
-    output_dataset['train'] = {'sentences': sentences, 'word_ids': word_ids}
-    
+    output_dataset['word_ids'] = word_ids
+    output_dataset['train'] = sentences
+
     save_pickle(output_dataset, args.out_path)
