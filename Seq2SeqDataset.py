@@ -1,8 +1,8 @@
-import numpy as np
 import json
 import pickle
-
 from pathlib import Path
+import numpy as np
+
 import chainer
 
 
@@ -16,7 +16,7 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
             n_target_min_tokens,
             n_target_max_tokens,
             validation=False
-            ):
+    ):
 
         if Path(source_sentence_path).exists() \
                 and Path(target_sentence_path).exists():
@@ -26,20 +26,20 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
 
         self.pairs = [
             (np.array(s['encoded_tokens'], np.int32),
-                np.array(t['encoded_tokens'], np.int32))
+             np.array(t['encoded_tokens'], np.int32))
             for s, t in zip(source_data['train'], target_data['train'])
             if n_source_min_tokens <= len(s['encoded_tokens']) <= n_source_max_tokens and
             n_target_min_tokens <= len(t['encoded_tokens']) <= n_target_max_tokens
-            ]
+        ]
 
         self.source_word_ids = source_data['word_ids']
         self.target_word_ids = target_data['word_ids']
         self.inv_source_word_ids = {
-                v: k for k, v in source_data['word_ids'].items()
-                }
+            v: k for k, v in source_data['word_ids'].items()
+        }
         self.inv_target_word_ids = {
-                v: k for k, v in target_data['word_ids'].items()
-                }
+            v: k for k, v in target_data['word_ids'].items()
+        }
 
         if validation:
             pass
@@ -47,7 +47,8 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
     def __len__(self):
         return len(self.pairs)
 
-    def load_data(self, path):
+    @staticmethod
+    def load_data(path):
         ext = Path(path).suffix
         if ext == '.pickle':
             with open(path, 'rb') as f:
@@ -69,10 +70,12 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
 
         return (unk / words) * 100
 
-    def index2token(self, indices, inv_word_ids):
+    @staticmethod
+    def index2token(indices, inv_word_ids):
         return [inv_word_ids[index] for index in indices]
 
-    def token2index(self, tokens, word_ids):
+    @staticmethod
+    def token2index(tokens, word_ids):
         return [word_ids[token] for token in tokens]
 
     def get_example(self, i):
@@ -89,7 +92,7 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
 
     def target_index2token(self, indices):
         return self.index2token(indices, self.inv_target_word_ids)
-    
+
     @property
     def get_source_word_ids(self):
         return self.source_word_ids
