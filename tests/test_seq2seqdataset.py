@@ -17,8 +17,8 @@ class TestSeq2SeqDatasetBase(unittest.TestCase):
         self.assertTrue(TARGET_SENTENCE_PATH.exists())
 
         self.dataset = Seq2SeqDatasetBase(
-            source_sentence_path=SOURCE_SENTENCE_PATH.name,
-            target_sentence_path=TARGET_SENTENCE_PATH.name,
+            source_sentence_path=str(SOURCE_SENTENCE_PATH),
+            target_sentence_path=str(TARGET_SENTENCE_PATH),
             n_source_min_tokens=N_SOURCE_MIN_TOKENS,
             n_source_max_tokens=N_SOURCE_MAX_TOKENS,
             n_target_min_tokens=N_TARGET_MIN_TOKENS,
@@ -26,7 +26,7 @@ class TestSeq2SeqDatasetBase(unittest.TestCase):
         )
 
         randn = np.random.randint(0, len(self.dataset))
-        self.target_index = self.dataset.get_exmple(randn)
+        self.target_index = self.dataset.get_example(randn)
         self.reference_index = self.dataset.pairs[randn]
         self.source_target_index = self.target_index[0]
         self.source_reference_index = self.reference_index[0]
@@ -34,7 +34,7 @@ class TestSeq2SeqDatasetBase(unittest.TestCase):
         self.target_reference_index = self.reference_index[1]
 
     def test_get_example(self):
-        self.assertIsInstance(self.target_index, self.reference_index)
+        self.assertIsInstance(self.target_index, tuple)
         self.assertEqual(self.target_index, self.reference_index)
 
     def test_source_index2token(self):
@@ -53,13 +53,13 @@ class TestSeq2SeqDatasetBase(unittest.TestCase):
         target_tokens = self.dataset.source_index2token(self.source_target_index)
         reversed_index = self.dataset.source_token2index(target_tokens)
 
-        self.assertEqual(reversed_index, self.source_reference_index)
+        self.assertEqual(reversed_index, list(self.source_reference_index))
 
     def test_target_token2index(self):
-        target_tokens = self.dataset.source_index2token(self.target_target_index)
-        reversed_index = self.dataset.source_token2index(target_tokens)
+        target_tokens = self.dataset.target_index2token(self.target_target_index)
+        reversed_index = self.dataset.target_token2index(target_tokens)
 
-        self.assertEqual(reversed_index, self.target_reference_index)
+        self.assertEqual(reversed_index, list(self.target_reference_index))
 
     def test_get_source_word_ids(self):
         word_ids = self.dataset.get_source_word_ids
