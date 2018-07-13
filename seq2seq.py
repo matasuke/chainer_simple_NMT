@@ -204,7 +204,7 @@ def main():
                         help="number of max tokens in target sentences")
     parser.add_argument('--log_interval', type=int, default=200,
                         help="number of iteration to show log")
-    parser.add_argument('--validation_interval', type=int, default=2000,
+    parser.add_argument('--validation_interval', type=int, default=200,
                         help="number of iteration to evaluate the model")
     parser.add_argument('--snapshot_interval', type=int, default=200,
                         help='number of iteration to save model and optimizer')
@@ -311,6 +311,7 @@ def main():
         ),
         trigger=(args.snapshot_interval, 'iteration')
     )
+    trainer.extend(extensions.ProgressBar())
 
     if args.validation_sources and args.validation_targets:
         test_data = Seq2SeqDatasetBase(
