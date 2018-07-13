@@ -98,7 +98,7 @@ class seq2seq(chainer.Chain):
                 _, _, ys = self.decoder(h, c, eys)
                 cys = F.concat(ys, axis=0)
                 wy = self.l1(cys)
-                ys = self.xp.argmax(wy.data, axis=1).astpye(np.int32)
+                ys = self.xp.argmax(wy.data, axis=1).astype(np.int32)
                 result.append(ys)
 
             result = cuda.to_cpu(self.xp.concatenate([self.xp.expand_dims(x, 0) for x in result]).T)
