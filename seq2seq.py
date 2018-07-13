@@ -204,7 +204,7 @@ def main():
                         help="number of max tokens in target sentences")
     parser.add_argument('--log_interval', type=int, default=200,
                         help="number of iteration to show log")
-    parser.add_argument('--validation_interval', type=int, default=4000,
+    parser.add_argument('--validation_interval', type=int, default=2000,
                         help="number of iteration to evaluate the model")
     parser.add_argument('--snapshot_interval', type=int, default=200,
                         help='number of iteration to save model and optimizer')
@@ -281,17 +281,15 @@ def main():
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
     trainer.extend(
         extensions.PrintReport(
-            ['epoch', 'iteration', 'main/loss', 'validation/main/accuracy',
-             'main/prep', 'validation/main/prep', 'validation/bleu',
-             'elapsed_time']
+            ['epoch', 'iteration', 'main/loss', 'main/prep',
+             'validation/main/loss', 'validation/main/prep', 'elapsed_time']
         ),
         trigger=(args.log_interval, 'iteration')
     )
     trainer.extend(
         extensions.LogReport(
-            ['epoch', 'iteration', 'main/loss', 'validation/main/accuracy',
-             'main/prep', 'validation/main/prep', 'validation/bleu',
-             'elapsed_time']
+            ['epoch', 'iteration', 'main/loss', 'main/prep',
+             'validation/main/loss', 'validation/main/prep', 'elapsed_time']
         ),
         trigger=(args.log_interval, 'iteration')
     )
