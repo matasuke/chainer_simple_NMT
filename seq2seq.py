@@ -204,7 +204,7 @@ def main():
                         help="number of max tokens in target sentences")
     parser.add_argument('--log_interval', type=int, default=200,
                         help="number of iteration to show log")
-    parser.add_argument('--valodation_interval', type=int, default=4000,
+    parser.add_argument('--validation_interval', type=int, default=4000,
                         help="number of iteration to evaluate the model")
     parser.add_argument('--snapshot_interval', type=int, default=200,
                         help='number of iteration to save model and optimizer')
@@ -304,7 +304,7 @@ def main():
             model,
             'model_iter_{.updater.iteration}'
         ),
-        trigger=(args.saapshot_interval, 'iteration')
+        trigger=(args.snapshot_interval, 'iteration')
     )
     trainer.extend(
         extensions.snapshot_object(
