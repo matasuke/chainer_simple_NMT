@@ -2,6 +2,7 @@ import argparse
 import collections
 import numpy as np
 from nltk.translate import bleu_score
+from pathlib import Path
 
 import chainer
 import chainer.functions as F
@@ -205,9 +206,36 @@ def main():
                         help="number of iteration to show log")
     parser.add_argument('--valodation_interval', type=int, default=4000,
                         help="number of iteration to evaluate the model")
+    parser.add_argument('--snapshot_interval', type=int, default=200,
+                        help='number of iteration to save model and optimizer')
     parser.add_argument('--out', '-o', type=str, default='result',
                         help="directory to output the result")
     args = parser.parse_args()
+
+    # make output dirs
+    out_dir = Path(args.out)
+    log_dir = Path(out_dir / 'logs')
+    result_dir = Path(out_dir / 'result')
+    snapshot_dir = Path(result_dir / 'snapshot')
+    snapshot_trainer = Path(result_dir / 'trainer')
+    snapshot_model_dir = Path(result_dir / 'models')
+    snapshot_opt_dir = Path(result_dir / 'optimizers')
+    final_result = Path(result_dir / 'final_result')
+
+    if log_dir.exists() is False:
+        log_dir.mkdir()
+    if result_dir.exists() is False:
+        result_dir.mkdir()
+    if snapshot_dir.exists() is False:
+        snapshot_dir.mkdir()
+    if snapshot_trainer.exists() is False:
+        snapshot_trainer.mkdir()
+    if snapshot_model_dir.exists() is False:
+        snapshot_model_dir.mkdir()
+    if snapshot_opt_dir.exists() is False:
+        snapshot_opt_dir.mkdir()
+    if final_result.exists() is False:
+        final_result.mkdir()
 
     train_data = Seq2SeqDatasetBase(
         args.SORCE,
@@ -252,13 +280,39 @@ def main():
         train_iter, optimizer, converter=convert, device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
     trainer.extend(
+        extensions.PrintReport(
+            ['epoch', 'iteration', 'main/loss', 'validation/main/accuracy',
+             'main/prep', 'validation/main/prep', 'validation/bleu',
+             'elapsed_time']
+        ),
+        trigger=(args.log_interval, 'iteration')
+    )
+    trainer.extend(
         extensions.LogReport(
             ['epoch', 'iteration', 'main/loss', 'validation/main/accuracy',
              'main/prep', 'validation/main/prep', 'validation/bleu',
              'elapsed_time']
         ),
-        trigger=(args.log_interval, 'iteration'))
+        trigger=(args.log_interval, 'iteration')
+    )
     trainer.extend(extensions.ProgressBar())
+    trainer.extend(
+        extensions.snapshot(),
+        trigger=(args.snapshot_interval, 'iteration'))
+    trainer.extend(
+        extensions.snapshot_object(
+            model,
+            'model_iter_{.updater.iteration}'
+        ),
+        trigger=(args.saapshot_interval, 'iteration')
+    )
+    trainer.extend(
+        extensions.snapshot_object(
+            optimizer,
+            'optimizer_iter_{.updater.iteration}'
+        ),
+        trigger=(args.snapshot_interval, 'iteration')
+    )
 
     if args.validation_sources and args.validation_targets:
         test_data = Seq2SeqDatasetBase(
@@ -296,6 +350,9 @@ def main():
 
     print('start training')
     trainer.run()
+
+    serializers.save_npz(final_result / 'model_final', model)
+    serializers.save_npz(final_result / 'optimizer_final', optimizer)
 
 
 if __name__ == '__main__':
