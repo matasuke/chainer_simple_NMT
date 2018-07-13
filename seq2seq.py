@@ -325,9 +325,9 @@ def main():
             validation=True
         )
 
-        print('validation data size: %d', len(test_data))
-        print('Source unk ratio: %.2f%%', test_data.source_unk_ratio)
-        print('Target unk ratio: %.2f%%', test_data.target_unk_ratio)
+        print('validation data size: %d' % len(test_data))
+        print('Source unk ratio: %.2f%%' % test_data.source_unk_ratio)
+        print('Target unk ratio: %.2f%%' % test_data.target_unk_ratio)
 
         @chainer.training.make_extension()
         def translate(trainer):
