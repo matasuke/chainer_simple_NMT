@@ -10,7 +10,7 @@ import collections
 import pickle
 import re
 from itertools import dropwhile
-
+from pathlib import Path
 from tqdm import tqdm
 
 
@@ -161,14 +161,16 @@ def token2index(tokens, word_ids):
 
 def load_pickle(in_file):
     """load pickle file."""
-    with open(in_file, 'rb') as f:
+    in_path = Path(in_file)
+    with in_path.open('rb') as f:
         row_data = pickle.load(f)
     return row_data
 
 
 def save_pickle(in_file, out_file):
     """save pickle file."""
-    with open(out_file, 'wb') as f:
+    out_path = Path(out_file)
+    with out_path.open('wb') as f:
         pickle.dump(in_file, f, pickle.HIGHEST_PROTOCOL)
 
 

@@ -41,6 +41,7 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
             v: k for k, v in target_data['word_ids'].items()
         }
 
+        self.validation = validation
         if validation:
             pass
 
@@ -49,12 +50,13 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
 
     @staticmethod
     def load_data(path):
-        ext = Path(path).suffix
+        in_path = Path(path)
+        ext = in_path.suffix
         if ext == '.pickle':
-            with open(path, 'rb') as f:
+            with in_path.open('rb') as f:
                 data = pickle.load(f)
         elif ext == '.json':
-            with open(path, 'r') as f:
+            with in_path.open('r') as f:
                 data = json.load(f)
         else:
             msg = 'File %s can be loaded.\n \
@@ -68,7 +70,7 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
         unk = sum((s == self.source_word_ids['<UNK>']).sum() for s in data)
         words = sum(s.size for s in data)
 
-        return (unk / words) * 100
+        return round((unk / words) * 100, 3)
 
     @staticmethod
     def index2token(indices, inv_word_ids):
@@ -108,3 +110,17 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
     @property
     def target_unk_ratio(self):
         return self.calc_unk_ratio([t for _, t in self.pairs])
+
+    @property
+    def get_configurations(self):
+        res = {}
+
+        if not self.validation:
+            res['Source_vocabulary_size'] = len(self.get_source_word_ids)
+            res['Target_vocabulary_size'] = len(self.get_target_word_ids)
+
+        res['Train_data_size'] = len(self.pairs)
+        res['Source_unk_ratio'] = self.source_unk_ratio
+        res['Target_unk_ratio'] = self.target_unk_ratio
+
+        return res

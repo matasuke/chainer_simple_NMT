@@ -13,7 +13,8 @@ from chainer.training import extensions
 from chainer import serializers
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
-
+from common.record import record_settings
+from common.make_dirs import create_save_dirs
 
 tokens = collections.Counter({
     '<UNK>': 0,
@@ -29,7 +30,6 @@ def sequence_embed(embed, xs):
     exs = F.split_axis(ex, x_selection, 0)
 
     return exs
-
 
 class seq2seq(chainer.Chain):
     def __init__(
@@ -212,31 +212,6 @@ def main():
                         help="directory to output the result")
     args = parser.parse_args()
 
-    # make output dirs
-    out_dir = Path(args.out)
-    log_dir = Path(out_dir / 'logs')
-    result_dir = Path(out_dir / 'result')
-    snapshot_dir = Path(result_dir / 'snapshot')
-    snapshot_trainer = Path(result_dir / 'trainer')
-    snapshot_model_dir = Path(result_dir / 'models')
-    snapshot_opt_dir = Path(result_dir / 'optimizers')
-    final_result = Path(result_dir / 'final_result')
-
-    if log_dir.exists() is False:
-        log_dir.mkdir()
-    if result_dir.exists() is False:
-        result_dir.mkdir()
-    if snapshot_dir.exists() is False:
-        snapshot_dir.mkdir()
-    if snapshot_trainer.exists() is False:
-        snapshot_trainer.mkdir()
-    if snapshot_model_dir.exists() is False:
-        snapshot_model_dir.mkdir()
-    if snapshot_opt_dir.exists() is False:
-        snapshot_opt_dir.mkdir()
-    if final_result.exists() is False:
-        final_result.mkdir()
-
     train_data = Seq2SeqDatasetBase(
         args.SORCE,
         args.TARGET,
@@ -246,11 +221,17 @@ def main():
         args.n_target_max_token
     )
 
-    print('Source vocabulary size: %d' % len(train_data.get_source_word_ids))
-    print('Target vocabulary size: %d' % len(train_data.get_target_word_ids))
-    print('Train data size: %d' % len(train_data))
-    print('Source unk ratio: %.2f%%' % train_data.source_unk_ratio)
-    print('Target unk ratio: %.2f%%' % train_data.target_unk_ratio)
+    # make output dirs
+    save_dirs = create_save_dirs(args.out)
+
+    # print dataset configurations
+    dataset_configurations = train_data.get_configurations
+    for key, value in dataset_configurations.items():
+        print(key + '\t' + value)
+
+    # make configuration file and save it
+    configurations = vars(args)
+    record_settings(save_dirs['log_dir'], configurations, dataset_configurations)
 
     # setup model
     model = seq2seq(
@@ -279,6 +260,7 @@ def main():
     updater = training.updaters.StandardUpdater(
         train_iter, optimizer, converter=convert, device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    '''
     trainer.extend(
         extensions.PrintReport(
             ['epoch', 'iteration', 'main/loss', 'main/prep',
@@ -286,6 +268,7 @@ def main():
         ),
         trigger=(args.log_interval, 'iteration')
     )
+    '''
     trainer.extend(
         extensions.LogReport(
             ['epoch', 'iteration', 'main/loss', 'main/prep',
@@ -311,7 +294,6 @@ def main():
         ),
         trigger=(args.snapshot_interval, 'iteration')
     )
-    trainer.extend(extensions.ProgressBar())
 
     if args.validation_sources and args.validation_targets:
         test_data = Seq2SeqDatasetBase(
@@ -350,8 +332,8 @@ def main():
     print('start training')
     trainer.run()
 
-    serializers.save_npz(final_result / 'model_final', model)
-    serializers.save_npz(final_result / 'optimizer_final', optimizer)
+    serializers.save_npz(save_dirs['final_result'] / 'model_final', model)
+    serializers.save_npz(save_dirs['final_result'] / 'optimizer_final', optimizer)
 
 
 if __name__ == '__main__':

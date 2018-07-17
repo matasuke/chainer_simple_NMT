@@ -9,14 +9,19 @@ class SlackNortifiler(chainer.training.Extension):
 
     def __init__(
         self,
-        model,
+        entries,
+        log_report='LogReport',
         slack_url,
-        key,
     ):
-
-        self.model = model
+        self._entries = entries
+        self._log_report= log_report
         self.SLACKURL = slack_url
-        self.key = key
 
-    def __call__(self, iterator):
+        self._log_len= 0
+
+    def __call__(self, trainer):
+        observation = trainer.observation
+        summary = self._summary
+
+    def _print(self, observation):
         
