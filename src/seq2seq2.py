@@ -117,23 +117,38 @@ def main():
     )
     # trainer.extend(extensions.ProgressBar())
     trainer.extend(
-        extensions.snapshot(
-            filename=str(save_dirs['snapshot_dir'] / 'snapshot_iter_{.updater.iteration}')
-        ),
-        trigger=(args.snapshot_interval, 'iteration'))
+        extensions.snapshot(),
+        trigger=(args.snapshot_interval, 'iteration')
+    )
     trainer.extend(
         extensions.snapshot_object(
             model,
-            filename=str(save_dirs['snapshot_model_dir'] / 'model_iter_{.updater.iteration}')
+            filename='model_iter_{.updater.iteration}'
         ),
         trigger=(args.snapshot_interval, 'iteration')
     )
     trainer.extend(
         extensions.snapshot_object(
             optimizer,
-            filename=str(save_dirs['snapshot_opt_dir'] / 'optimizer_iter_{.updater.iteration}')
+            filename='optimizer_iter_{.updater.iteration}'
         ),
         trigger=(args.snapshot_interval, 'iteration')
+    )
+    trainer.extend(
+        extensions.PlotReport(
+            ['main/loss', 'validation/main/loss'],
+            x_key='epoch',
+            trigger=(1, 'epoch'),
+            file_name='loss.png'
+        )
+    )
+    trainer.extend(
+        extensions.PlotReport(
+            ['main/prep', 'validation/main/prep'],
+            x_key='epoch',
+            trigger=(1, 'epoch'),
+            file_name='prep.png'
+        )
     )
 
     if args.validation_sources and args.validation_targets:
