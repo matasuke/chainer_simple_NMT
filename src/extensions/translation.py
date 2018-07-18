@@ -19,7 +19,7 @@ class Translation(chainer.training.Extension):
         self.data_size = len(test_data)
 
     def __call__(self, test_data):
-        source, target = test_data[np.random.choice(self.data_size)]
+        source, target = self.test_data[np.random.choice(self.data_size)]
         result = self.translate_func([self.model.xp.array(source)], self.max_length)[0]
 
         source_sentence = ' '.join(test_data.source_index2token(source)[1:-1])

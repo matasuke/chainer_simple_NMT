@@ -5,6 +5,8 @@ from chainer.backends import cuda
 from chainer import training
 from chainer.training import extensions
 from chainer import serializers
+import matplotlib
+matplotlib.use('Agg')
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
 from common.record import record_settings
@@ -117,7 +119,9 @@ def main():
     )
     # trainer.extend(extensions.ProgressBar())
     trainer.extend(
-        extensions.snapshot(),
+        extensions.snapshot(
+            filename='snapshot_iter_{.updater.iteration}'
+        ),
         trigger=(args.snapshot_interval, 'iteration')
     )
     trainer.extend(
