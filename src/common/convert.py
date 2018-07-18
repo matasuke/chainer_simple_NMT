@@ -20,4 +20,3 @@ def convert(batch, device):
 
     return {'xs': to_device_batch([x for x, _ in batch]),
             'ys': to_device_batch([y for _, y in batch])}
-

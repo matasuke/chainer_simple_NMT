@@ -46,11 +46,11 @@ def main():
                         help="number of min tokens in target sentences")
     parser.add_argument('--n_target_max_token', type=int, default=50,
                         help="number of max tokens in target sentences")
-    parser.add_argument('--log_interval', type=int, default=200,
+    parser.add_argument('--log_interval', type=int, default=1,
                         help="number of iteration to show log")
-    parser.add_argument('--validation_interval', type=int, default=200,
+    parser.add_argument('--validation_interval', type=int, default=1,
                         help="number of iteration to evaluate the model")
-    parser.add_argument('--snapshot_interval', type=int, default=200,
+    parser.add_argument('--snapshot_interval', type=int, default=1,
                         help='number of iteration to save model and optimizer')
     parser.add_argument('--out', '-o', type=str, default='result',
                         help="directory to output the result")
@@ -106,37 +106,39 @@ def main():
     trainer.extend(
         extensions.PrintReport(
             ['epoch', 'iteration', 'main/loss', 'main/prep',
-             'validation/main/loss', 'validation/main/prep', 'elapsed_time']
+             'validation/main/loss', 'validation/main/prep',
+             'validation/main/bleu', ' elapsed_time']
         ),
-        trigger=(args.log_interval, 'iteration')
+        trigger=(args.log_interval, 'epoch')
     )
     trainer.extend(
         extensions.LogReport(
             ['epoch', 'iteration', 'main/loss', 'main/prep',
-             'validation/main/loss', 'validation/main/prep', 'elapsed_time']
+             'validation/main/loss', 'validation/main/prep',
+             'validation/main/bleu', 'elapsed_time']
         ),
-        trigger=(args.log_interval, 'iteration')
+        trigger=(args.log_interval, 'epoch')
     )
     # trainer.extend(extensions.ProgressBar())
     trainer.extend(
         extensions.snapshot(
             filename='snapshot_iter_{.updater.iteration}'
         ),
-        trigger=(args.snapshot_interval, 'iteration')
+        trigger=(args.snapshot_interval, 'epoch')
     )
     trainer.extend(
         extensions.snapshot_object(
             model,
             filename='model_iter_{.updater.iteration}'
         ),
-        trigger=(args.snapshot_interval, 'iteration')
+        trigger=(args.snapshot_interval, 'epoch')
     )
     trainer.extend(
         extensions.snapshot_object(
             optimizer,
             filename='optimizer_iter_{.updater.iteration}'
         ),
-        trigger=(args.snapshot_interval, 'iteration')
+        trigger=(args.snapshot_interval, 'epoch')
     )
     trainer.extend(
         extensions.PlotReport(
@@ -172,12 +174,12 @@ def main():
 
         trainer.extend(
             Translation(model, model.translate, test_data),
-            trigger=(args.validation_interval, 'iteration')
+            trigger=(args.validation_interval, 'epoch')
         )
         trainer.extend(
             CalculateBleu(
                 model, test_data, 'validation/main/bleu', device=args.gpu),
-            trigger=(args.validation_interval, 'iteration'))
+            trigger=(args.validation_interval, 'epoch'))
 
     print('start training')
     trainer.run()
