@@ -132,6 +132,7 @@ def main():
         ),
         trigger=(args.log_interval, 'iteration')
     )
+
     '''
     trainer.extend(
         extensions.snapshot_object(
