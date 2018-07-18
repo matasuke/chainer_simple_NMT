@@ -164,7 +164,7 @@ def main():
 
         test_dataset_configurations = test_data.get_configurations
         for key, value in test_dataset_configurations.items():
-            print(key + '\t' + int(value))
+            print(key + '\t' + str(value))
 
         trainer.extend(
             Translation(model, model.translate, test_data),
