@@ -22,9 +22,9 @@ class Translation(chainer.training.Extension):
         source, target = self.test_data[np.random.choice(self.data_size)]
         result = self.translate_func([self.model.xp.array(source)], self.max_length)[0]
 
-        source_sentence = ' '.join(test_data.source_index2token(source)[1:-1])
-        target_sentence = ' '.join(test_data.target_index2token(target)[1:-1])
-        result_sentence = ' '.join(test_data.target_index2token(result)[1:-1])
+        source_sentence = ' '.join(self.test_data.source_index2token(source)[1:-1])
+        target_sentence = ' '.join(self.test_data.target_index2token(target)[1:-1])
+        result_sentence = ' '.join(self.test_data.target_index2token(result)[1:-1])
         print('# source : ' + source_sentence)
         print('# target : ' + target_sentence)
         print('# result : ' + result_sentence)
