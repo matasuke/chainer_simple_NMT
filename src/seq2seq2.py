@@ -6,6 +6,7 @@ from chainer import training
 from chainer.training import extensions
 from chainer import serializers
 import matplotlib
+import numpy as np
 matplotlib.use('Agg')
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
