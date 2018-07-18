@@ -103,6 +103,7 @@ def main():
     updater = training.updaters.StandardUpdater(
         train_iter, optimizer, converter=convert, device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+
     trainer.extend(
         extensions.PrintReport(
             ['epoch', 'iteration', 'main/loss', 'main/prep',
@@ -124,27 +125,27 @@ def main():
         extensions.snapshot(
             filename='snapshot_iter_{.updater.iteration}'
         ),
-        trigger=(args.snapshot_interval, 'epoch')
+        trigger=(args.log_interval, 'epoch')
     )
     trainer.extend(
         extensions.snapshot_object(
             model,
             filename='model_iter_{.updater.iteration}'
         ),
-        trigger=(args.snapshot_interval, 'epoch')
+        trigger=(args.log_interval, 'epoch')
     )
     trainer.extend(
         extensions.snapshot_object(
             optimizer,
             filename='optimizer_iter_{.updater.iteration}'
         ),
-        trigger=(args.snapshot_interval, 'epoch')
+        trigger=(args.log_interval, 'epoch')
     )
     trainer.extend(
         extensions.PlotReport(
             ['main/loss', 'validation/main/loss'],
             x_key='epoch',
-            trigger=(1, 'epoch'),
+            trigger=(args.validation_interval, 'epoch'),
             file_name='loss.png'
         )
     )
@@ -152,7 +153,7 @@ def main():
         extensions.PlotReport(
             ['main/prep', 'validation/main/prep'],
             x_key='epoch',
-            trigger=(1, 'epoch'),
+            trigger=(args.validation_interval, 'epoch'),
             file_name='prep.png'
         )
     )
