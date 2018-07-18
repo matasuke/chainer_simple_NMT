@@ -171,8 +171,6 @@ def main():
             trigger=(args.validation_interval, 'iteration')
         )
         trainer.extend(
-            model.translate, trigger=(args.validation_interval, 'iteration'))
-        trainer.extend(
             CalculateBleu(
                 model, test_data, 'validation/main/bleu', device=args.gpu),
             trigger=(args.validation_interval, 'iteration'))
