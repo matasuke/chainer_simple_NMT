@@ -24,7 +24,7 @@ class Translation(chainer.training.Extension):
 
         source_sentence = ' '.join(self.test_data.source_index2token(source)[1:-1])
         target_sentence = ' '.join(self.test_data.target_index2token(target)[1:-1])
-        result_sentence = ' '.join(self.test_data.target_index2token(result)[1:-1])
+        result_sentence = ' '.join(self.test_data.target_index2token(result))
         print('# source : ' + source_sentence)
         print('# target : ' + target_sentence)
         print('# result : ' + result_sentence)

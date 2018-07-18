@@ -174,8 +174,20 @@ def main():
         for key, value in test_dataset_configurations.items():
             print(key + '\t' + str(value))
 
+        @chainer.training.make_extension()
+        def translate(trainer):
+            source, target = test_data[np.random.choice(len(test_data))]
+            result = model.translate([model.xp.array(source)])[0]
+
+            source_sentence = ' '.join(test_data.source_index2token(source)[1:-1])
+            target_sentence = ' '.join(test_data.target_index2token(target)[1:-1])
+            result_sentence = ' '.join(test_data.target_index2token(result)[1:-1])
+            print('# source : ' + source_sentence)
+            print('# target : ' + target_sentence)
+            print('# result : ' + result_sentence)
+
         trainer.extend(
-            Translation(model, model.translate, test_data),
+            translate,
             trigger=(args.validation_interval, 'iteration')
         )
         trainer.extend(
