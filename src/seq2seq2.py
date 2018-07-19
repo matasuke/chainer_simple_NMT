@@ -109,7 +109,7 @@ def main():
              'validation/main/loss', 'validation/main/prep',
              'validation/main/bleu', ' elapsed_time']
         ),
-        trigger=(args.log_interval, 'iteration')
+        trigger=(args.log_interval, 'epoch')
     )
     trainer.extend(
         extensions.LogReport(
@@ -117,48 +117,34 @@ def main():
              'validation/main/loss', 'validation/main/prep',
              'validation/main/bleu', 'elapsed_time']
         ),
-        trigger=(args.log_interval, 'iteration')
+        trigger=(args.log_interval, 'epoch')
     )
     # trainer.extend(extensions.ProgressBar())
     trainer.extend(
         extensions.snapshot(
             filename='snapshot_iter_{.updater.iteration}'
         ),
-        trigger=(args.log_interval, 'iteration')
-    )
-    trainer.extend(
-        extensions.snapshot_object(
-            model,
-            filename='model_iter_{.updater.iteration}'
-        ),
-        trigger=(args.log_interval, 'iteration')
+        trigger=(args.log_interval, 'epoch')
     )
 
     '''
     trainer.extend(
-        extensions.snapshot_object(
-            optimizer,
-            filename='optimizer_iter_{.updater.iteration}'
-        ),
-        trigger=(args.log_interval, 'iteration')
-    )
-    trainer.extend(
         extensions.PlotReport(
             ['main/loss', 'validation/main/loss'],
             x_key='epoch',
-            trigger=(args.validation_interval, 'iteration'),
+            trigger=(args.validation_interval, 'epoch'),
             file_name='loss.png'
         )
     )
-    '''
     trainer.extend(
         extensions.PlotReport(
             ['main/prep', 'validation/main/prep'],
             x_key='epoch',
-            trigger=(args.log_interval, 'iteration'),
+            trigger=(args.log_interval, 'epoch'),
             file_name='prep.png'
         )
     )
+    '''
 
     if args.validation_sources and args.validation_targets:
         test_data = Seq2SeqDatasetBase(
