@@ -195,6 +195,10 @@ if __name__ == '__main__':
                         help="cutoff words less than the number digignated")
     parser.add_argument('--vocab_size', type=int, default=0,
                         help='vocabrary size')
+    parser.add_argument('--validation_in_path', type=str,
+                        help='validation dataset')
+    parser.add_argument('--val_out_path', type=str,
+                        help='validation out path')
     args = parser.parse_args()
 
     tokenizer = Tokenizer(
@@ -203,9 +207,6 @@ if __name__ == '__main__':
         to_lower=args.tolower,
         remove_suffix=args.remove_suffix
     )
-
-    sentence_idx = 0
-    sentences = []
 
     word_counter = collections.Counter()
     word_ids = collections.Counter({
@@ -217,6 +218,16 @@ if __name__ == '__main__':
     # read files
     f = open(args.in_path, 'r')
     lines = f.readlines()
+
+    sentence_idx = 0
+    sentences = []
+
+    if args.validation_in_path:
+        val_f = open(args.validation_in_path, 'r')
+        val_lines = f.redlines()
+
+        val_sentence_idx = 0
+        val_sentences = []
 
     # tokenize sentences
     for line in tqdm(lines):
@@ -236,6 +247,22 @@ if __name__ == '__main__':
 
         # add each word to word_counter
         word_counter.update(tokens)
+
+    if args.validation_in_path:
+        for line in tqdm(val_lines):
+            tokens = []
+            tokens += ['<SOS>']
+            tokens += tokenizer.pre_process(line)
+            tokens += ['<EOS>']
+
+            val_sentences.append({
+                'sentence': line.strip(),
+                'tokens': tokens,
+                'encoded_tokens': tokens,
+                'sentence_idx': val_sentence_idx
+            })
+
+            val_sentence_idx += 1
 
     print("total distinct words:{0}".format(len(word_counter)))
     print('top 30 frequent words:')
@@ -265,8 +292,19 @@ if __name__ == '__main__':
         sentence['encoded_tokens'] = \
             token2index(sentence['encoded_tokens'], word_ids)
 
+    for val_sentence in tqdm(val_sentences):
+        val_sentence['encoded_tokens'] = \
+            token2index(val_sentence['encoded_tokens'], word_ids)
+
     output_dataset = {}
     output_dataset['word_ids'] = word_ids
-    output_dataset['train'] = sentences
+    output_dataset['sentences'] = sentences
 
     save_pickle(output_dataset, args.out_path)
+
+    if args.validation_in_path:
+        val_output_dataset = {}
+        val_output_dataset['word_ids'] = word_ids
+        val_output_dataset['sentences'] = val_sentences
+
+        save_pickle(val_output_dataset, args.val_out_path)

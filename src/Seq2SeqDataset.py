@@ -22,12 +22,12 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
                 and Path(target_sentence_path).exists():
             source_data = self.load_data(source_sentence_path)
             target_data = self.load_data(target_sentence_path)
-            assert len(source_data['train']) == len(target_data['train'])
+            assert len(source_data['sentences']) == len(target_data['sentences'])
 
         self.pairs = [
             (np.array(s['encoded_tokens'], np.int32),
              np.array(t['encoded_tokens'], np.int32))
-            for s, t in zip(source_data['train'], target_data['train'])
+            for s, t in zip(source_data['sentences'], target_data['sentences'])
             if n_source_min_tokens <= len(s['encoded_tokens']) <= n_source_max_tokens and
             n_target_min_tokens <= len(t['encoded_tokens']) <= n_target_max_tokens
         ]
