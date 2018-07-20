@@ -154,11 +154,8 @@ def main():
             args.n_source_max_token,
             args.n_target_min_token,
             args.n_target_max_token,
+            validation=True
         )
-
-        test_dataset_configurations = test_data.get_configurations
-        for key, value in test_dataset_configurations.items():
-            print(key + '\t' + str(value))
 
         @chainer.training.make_extension()
         def translate(trainer, out=None):

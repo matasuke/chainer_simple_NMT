@@ -5,6 +5,7 @@ import numpy as np
 
 import chainer
 
+# TODO: separate vocaburaly and sentences to reduce memory size when using devaloping dataset
 
 class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
     def __init__(
@@ -15,7 +16,6 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
             n_source_max_tokens,
             n_target_min_tokens,
             n_target_max_tokens,
-            validation=False
     ):
 
         if Path(source_sentence_path).exists() \
@@ -40,8 +40,6 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
         self.inv_target_word_ids = {
             v: k for k, v in target_data['word_ids'].items()
         }
-
-        self.validation = validation
 
     def __len__(self):
         return len(self.pairs)
@@ -116,9 +114,9 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
         res['Source_vocabulary_size'] = len(self.get_source_word_ids)
         res['Target_vocabulary_size'] = len(self.get_target_word_ids)
         res['Train_data_size'] = len(self.pairs)
+        res['Source_unk_ratio'] = self.source_unk_ratio
+        res['Target_unk_ratio'] = self.target_unk_ratio
 
-        if self.validation:
-            res['Source_unk_ratio'] = self.source_unk_ratio
-            res['Target_unk_ratio'] = self.target_unk_ratio
+        # TODO: get number of sentences in validation dataset
 
         return res
