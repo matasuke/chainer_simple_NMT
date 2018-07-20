@@ -195,7 +195,7 @@ if __name__ == '__main__':
                         help="cutoff words less than the number digignated")
     parser.add_argument('--vocab_size', type=int, default=0,
                         help='vocabrary size')
-    parser.add_argument('--validation_in_path', type=str,
+    parser.add_argument('--val_in_path', type=str,
                         help='validation dataset')
     parser.add_argument('--val_out_path', type=str,
                         help='validation out path')
@@ -222,8 +222,8 @@ if __name__ == '__main__':
     sentence_idx = 0
     sentences = []
 
-    if args.validation_in_path:
-        val_f = open(args.validation_in_path, 'r')
+    if args.val_in_path:
+        val_f = open(args.val_in_path, 'r')
         val_lines = f.redlines()
 
         val_sentence_idx = 0
@@ -248,7 +248,7 @@ if __name__ == '__main__':
         # add each word to word_counter
         word_counter.update(tokens)
 
-    if args.validation_in_path:
+    if args.val_in_path:
         for line in tqdm(val_lines):
             tokens = []
             tokens += ['<SOS>']
@@ -302,7 +302,7 @@ if __name__ == '__main__':
 
     save_pickle(output_dataset, args.out_path)
 
-    if args.validation_in_path:
+    if args.val_in_path:
         val_output_dataset = {}
         val_output_dataset['word_ids'] = word_ids
         val_output_dataset['sentences'] = val_sentences
