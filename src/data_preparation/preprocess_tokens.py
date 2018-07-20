@@ -224,7 +224,7 @@ if __name__ == '__main__':
 
     if args.val_in_path:
         val_f = open(args.val_in_path, 'r')
-        val_lines = f.redlines()
+        val_lines = f.readlines()
 
         val_sentence_idx = 0
         val_sentences = []

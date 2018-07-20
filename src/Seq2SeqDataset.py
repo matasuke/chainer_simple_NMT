@@ -42,8 +42,6 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
         }
 
         self.validation = validation
-        if validation:
-            pass
 
     def __len__(self):
         return len(self.pairs)
@@ -115,12 +113,12 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
     def get_configurations(self):
         res = {}
 
-        if not self.validation:
-            res['Source_vocabulary_size'] = len(self.get_source_word_ids)
-            res['Target_vocabulary_size'] = len(self.get_target_word_ids)
-
+        res['Source_vocabulary_size'] = len(self.get_source_word_ids)
+        res['Target_vocabulary_size'] = len(self.get_target_word_ids)
         res['Train_data_size'] = len(self.pairs)
-        res['Source_unk_ratio'] = self.source_unk_ratio
-        res['Target_unk_ratio'] = self.target_unk_ratio
+
+        if self.validation:
+            res['Source_unk_ratio'] = self.source_unk_ratio
+            res['Target_unk_ratio'] = self.target_unk_ratio
 
         return res
