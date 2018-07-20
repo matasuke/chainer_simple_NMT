@@ -162,7 +162,7 @@ def main():
             print(key + '\t' + str(value))
 
         @chainer.training.make_extension()
-        def translate(trainer):
+        def translate(trainer, out=None):
             source, target = test_data[np.random.choice(len(test_data))]
             result = model.translate([model.xp.array(source)])[0]
 
@@ -173,14 +173,22 @@ def main():
             print('# target : ' + target_sentence)
             print('# result : ' + result_sentence)
 
+            if out is not None:
+                with open(out, 'a') as f:
+                    f.write('epoch ')
+                    f.write(trainer._epoch)
+                    f.write('\n')
+                    f.write(source_sentence + '\n')
+                    f.write(target_sentence + '\n')
+                    f.write(result_sentence + '\n\n'')
         trainer.extend(
             translate,
-            trigger=(args.validation_interval, 'iteration')
+            trigger=(args.validation_interval, 'epoch')
         )
         trainer.extend(
             CalculateBleu(
                 model, test_data, 'validation/main/bleu', device=args.gpu),
-            trigger=(args.validation_interval, 'iteration'))
+            trigger=(args.validation_interval, 'epoch'))
 
     print('start training')
     trainer.run()
