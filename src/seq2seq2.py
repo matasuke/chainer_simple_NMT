@@ -27,7 +27,7 @@ def main():
                         help='preprocessed validation sorce data path')
     parser.add_argument('--validation_targets', type=str, default='',
                         help="preprocessed validation target data path")
-    parser.add_argument('--batchsize', '-b', type=int, default=256,
+    parser.add_argument('--batchsize', '-b', type=int, default=64,
                         help="numbe of sentence pairs in each mini-batch")
     parser.add_argument('--epoch', '-e', type=int, default=20,
                         help="number of epoch to train")
@@ -47,9 +47,9 @@ def main():
                         help="number of min tokens in target sentences")
     parser.add_argument('--n_target_max_token', type=int, default=50,
                         help="number of max tokens in target sentences")
-    parser.add_argument('--log_interval', type=int, default=200,
+    parser.add_argument('--log_interval', type=int, default=1,
                         help="number of iteration to show log")
-    parser.add_argument('--validation_interval', type=int, default=200,
+    parser.add_argument('--validation_interval', type=int, default=1,
                         help="number of iteration to evaluate the model")
     parser.add_argument('--out', '-o', type=str, default='result',
                         help="directory to output the result")
@@ -180,16 +180,17 @@ def main():
                     f.write('\n')
                     f.write(source_sentence + '\n')
                     f.write(target_sentence + '\n')
-                    f.write(result_sentence + '\n\n'')
+                    f.write(result_sentence + '\n\n')
         trainer.extend(
             translate,
             trigger=(args.validation_interval, 'epoch')
         )
+        '''
         trainer.extend(
             CalculateBleu(
                 model, test_data, 'validation/main/bleu', device=args.gpu),
             trigger=(args.validation_interval, 'epoch'))
-
+        '''
     print('start training')
     trainer.run()
 
