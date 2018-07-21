@@ -95,6 +95,7 @@ class seq2seq(chainer.Chain):
 
             outs = []
             for y in result:
+                print(y)
                 inds = np.argwhere(y == tokens['<EOS>'])
                 if inds:
                     y = y[:inds[0, 0]]
