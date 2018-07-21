@@ -154,7 +154,6 @@ def main():
             args.n_source_max_token,
             args.n_target_min_token,
             args.n_target_max_token,
-            validation=True
         )
 
         @chainer.training.make_extension()
