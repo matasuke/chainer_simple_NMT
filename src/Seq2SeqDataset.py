@@ -18,6 +18,8 @@ class Seq2SeqDatasetBase(chainer.dataset.DatasetMixin):
             n_target_max_tokens,
     ):
 
+        # TODO: chenge it to use p.open() and exception
+
         if Path(source_sentence_path).exists() \
                 and Path(target_sentence_path).exists():
             source_data = self.load_data(source_sentence_path)
