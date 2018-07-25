@@ -176,16 +176,17 @@ def main():
                     f.write(source_sentence + '\n')
                     f.write(target_sentence + '\n')
                     f.write(result_sentence + '\n\n')
+        trainer.exnted(
+            extensions.Evaluator(tesT_data, model, converter=converter)
+            trigger=(args.validation_interval, 'opoch'))
         trainer.extend(
             translate,
             trigger=(args.validation_interval, 'epoch')
         )
-        '''
         trainer.extend(
             CalculateBleu(
                 model, test_data, 'validation/main/bleu', device=args.gpu),
             trigger=(args.validation_interval, 'epoch'))
-        '''
     print('start training')
     trainer.run()
 

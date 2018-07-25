@@ -87,8 +87,6 @@ class Tokenizer(object):
         self.removed_char = re.compile(r'[.,!?"\'\";:。、]')
         self.split_digits = re.compile(r'\d')
 
-        # TODO:
-        # add validation dataset preprocesser and use training index list to convert it
         if self.tokenize:
             if lang == 'jp':
                 import janome
