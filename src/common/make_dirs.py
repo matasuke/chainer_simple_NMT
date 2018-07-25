@@ -13,7 +13,7 @@ def create_save_dirs(out):
     final_result = result_dir / 'final_result'
 
     if not out_dir.exists():
-        out_dir.mkdir()
+        out_dir.mkdir(parents=True)
     if not log_dir.exists():
         log_dir.mkdir()
     if not plot_dir.exists():
