@@ -174,7 +174,7 @@ def main():
                 p = p / 'test_translation.txt'
                 with open(p, 'a') as f:
                     f.write('epoch ')
-                    f.write(trainer.updater.epoch)
+                    f.write(str(rainer.updater.epoch))
                     f.write('\n')
                     f.write(source_sentence + '\n')
                     f.write(target_sentence + '\n')
