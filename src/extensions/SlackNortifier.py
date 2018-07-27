@@ -7,7 +7,7 @@ from chainer.training.extensions import util
 import json
 import requests
 
-class SlackNortifiler(chainer.training.Extension):
+class SlackNortifier(chainer.training.Extension):
     trigger = 1, 'epoch'
     priority = chainer.training.PRIORITY_WRITER
 
