@@ -37,8 +37,9 @@ class SlackNortifier(chainer.training.Extension):
         self._templates = templates
 
     def __call__(self, trainer):
-        observation = trainer.observation
-        summary = self._summary
+        if self._header:
+            self._post2slack(self._header)
+            self._header = None
 
         log_report = self._log_report
         if isinstance(log_report, 'str'):
