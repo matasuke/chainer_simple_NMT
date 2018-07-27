@@ -14,7 +14,8 @@ from Seq2SeqDataset import Seq2SeqDatasetBase
 from common.record import record_settings
 from common.make_dirs import create_save_dirs
 from common.convert import convert
-from extensions.translation import Translation
+from common.ENV import SLACK_CHANNEL_NAME, SLACK_URL
+from extensions.translation import SlackNortifier
 from extensions.CalculateBleu import CalculateBleu
 from net import seq2seq
 
@@ -118,6 +119,17 @@ def main():
              'validation/main/loss', 'validation/main/prep',
              'validation/main/bleu', 'elapsed_time']
         ),
+        trigger=(args.log_interval, 'epoch')
+    )
+    trainer.extend(
+        SlackNortifier(
+            ['epoch', 'iteration', 'main/loss', 'main/prep',
+             'validation/main/loss', 'validation/main/prep',
+             'validation/main/bleu', 'elapsed_time']
+            username=save_dirs['base_dir'].name,
+            channel=SLACK_CHANNEL_NAME,
+            slack_url=SLACK_URL
+            ),
         trigger=(args.log_interval, 'epoch')
     )
     # trainer.extend(extensions.ProgressBar())
