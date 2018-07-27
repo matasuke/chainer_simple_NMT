@@ -156,7 +156,7 @@ def main():
         )
 
         @chainer.training.make_extension()
-        def translate(trainer, out=None):
+        def translate(trainer):
             source, target = test_data[np.random.choice(len(test_data))]
             result = model.translate([model.xp.array(source)])[0]
 
@@ -167,18 +167,17 @@ def main():
             print('# target : ' + target_sentence)
             print('# result : ' + result_sentence)
 
-            if out:
-                p = Path(out)
-                if not p.exists():
-                    p.make_dirs(parents=True)
-                p = p / 'test_translation.txt'
-                with open(p, 'a') as f:
-                    f.write('epoch ')
-                    f.write(str(trainer.updater.epoch))
-                    f.write('\n')
-                    f.write(source_sentence + '\n')
-                    f.write(target_sentence + '\n')
-                    f.write(result_sentence + '\n\n')
+            p = Path(save_dirs['base_dir'])
+            if not p.exists():
+                p.make_dirs(parents=True)
+            p = p / 'test_translation.txt'
+            with open(p, 'a') as f:
+                f.write('epoch ')
+                f.write(str(trainer.updater.epoch))
+                f.write('\n')
+                f.write(source_sentence + '\n')
+                f.write(target_sentence + '\n')
+                f.write(result_sentence + '\n\n')
 
         '''
         trainer.exnted(
@@ -186,7 +185,7 @@ def main():
             trigger=(args.validation_interval, 'epoch'))
         '''
         trainer.extend(
-            translate(trainer, out=save_dirs['log_dir']),
+            translate,
             trigger=(args.validation_interval, 'epoch')
         )
         trainer.extend(
