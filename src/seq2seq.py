@@ -8,6 +8,7 @@ from chainer import serializers
 import matplotlib
 import numpy as np
 matplotlib.use('Agg')
+from pathlib import Path
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
 from common.record import record_settings
