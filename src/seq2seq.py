@@ -170,7 +170,8 @@ def main():
             if out:
                 p = Path(out)
                 if not p.exists():
-                    p.make_dirs()
+                    p.make_dirs(parents=True)
+                p = p / 'test_translation.txt'
                 with open(p, 'a') as f:
                     f.write('epoch ')
                     f.write(trainer.updater.epoch)
