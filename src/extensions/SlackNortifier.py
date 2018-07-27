@@ -1,7 +1,7 @@
 import sys
 
 import chainer
-from chainer.training import extentions
+from chainer.training import extensions
 from chainer.training.extensions import log_report as log_report_module
 from chainer.training.extensions import util
 import json
@@ -14,8 +14,8 @@ class SlackNortifiler(chainer.training.Extension):
     def __init__(
         self,
         entries,
-        log_report='LogReport',
         slack_url,
+        log_report='LogReport',
         username='',
         channel='',
     ):
@@ -60,7 +60,7 @@ class SlackNortifiler(chainer.training.Extension):
         payload = {
             "text": text,
             "username": self.username,
-            "channel": self.channel
+            "channel": self.channel,
             "icon_emoji": "ghost:"
         }
 

@@ -15,7 +15,7 @@ from common.record import record_settings
 from common.make_dirs import create_save_dirs
 from common.convert import convert
 from common.ENV import SLACK_CHANNEL_NAME, SLACK_URL
-from extensions.translation import SlackNortifier
+from extensions.SlackNortifier import SlackNortifier
 from extensions.CalculateBleu import CalculateBleu
 from net import seq2seq
 
@@ -125,7 +125,7 @@ def main():
         SlackNortifier(
             ['epoch', 'iteration', 'main/loss', 'main/prep',
              'validation/main/loss', 'validation/main/prep',
-             'validation/main/bleu', 'elapsed_time']
+             'validation/main/bleu', 'elapsed_time'],
             username=save_dirs['base_dir'].name,
             channel=SLACK_CHANNEL_NAME,
             slack_url=SLACK_URL
