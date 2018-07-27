@@ -6,3 +6,5 @@ def select_optimizer(type_opt, ):
         optimizer = optimizers.Adam()
     if type_opt = "SGD":
         optimizer = optimizers.SGD()
+
+    return type_opt
