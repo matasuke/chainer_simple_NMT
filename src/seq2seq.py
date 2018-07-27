@@ -146,8 +146,8 @@ def main():
 
     if args.validation_source and args.validation_target:
         test_data = Seq2SeqDatasetBase(
-            args.validation_sources,
-            args.validation_targets,
+            args.validation_source,
+            args.validation_target,
             args.n_source_min_token,
             args.n_source_max_token,
             args.n_target_min_token,
