@@ -184,7 +184,7 @@ def main():
             trigger=(args.validation_interval, 'epoch'))
         '''
         trainer.extend(
-            translate(out=save_dirs['log_dir']),
+            translate(trainer, out=save_dirs['log_dir']),
             trigger=(args.validation_interval, 'epoch')
         )
         trainer.extend(
