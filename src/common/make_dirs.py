@@ -23,7 +23,7 @@ def create_save_dirs(args):
     if not out_dir.exists():
         out_dir.mkdir(parents=True)
     if not base_dir.exists():
-        out_dir.mkdir()
+        base_dir.mkdir()
     if not log_dir.exists():
         log_dir.mkdir()
     if not plot_dir.exists():
