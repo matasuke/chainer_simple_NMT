@@ -144,7 +144,7 @@ def main():
         )
     )
 
-    if args.validation_sources and args.validation_targets:
+    if args.validation_source and args.validation_target:
         test_data = Seq2SeqDatasetBase(
             args.validation_sources,
             args.validation_targets,
