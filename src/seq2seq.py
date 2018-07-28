@@ -137,7 +137,7 @@ def main():
             ),
             trigger=(args.log_interval, 'epoch')
         )
-    # trainer.extend(extensions.ProgressBar())
+    trainer.extend(extensions.ProgressBar())
     trainer.extend(
         extensions.snapshot(
             filename='snapshot_iter_{.updater.iteration}'
