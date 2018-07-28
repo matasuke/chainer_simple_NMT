@@ -1,25 +1,26 @@
 import argparse
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 
 import chainer
 from chainer.backends import cuda
 from chainer import training
 from chainer.training import extensions
 from chainer import serializers
-import matplotlib
-import numpy as np
-matplotlib.use('Agg')
-from pathlib import Path
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
 from common.record import record_settings
 from common.make_dirs import create_save_dirs
 from common.convert import convert
-from common.ENV import SLACK_CHANNEL_NAME, SLACK_URL
-from extensions.SlackNortifier import SlackNortifier
+from common.ENV import SLACK_URL, SLACK_REPORT_CHANNEL_NAME, SLACK_TRANSLATION_CHANNEL_NAME
+from extensions.SlackNortifier import SlackNortifier, post2slack
 from extensions.CalculateBleu import CalculateBleu
 from net import seq2seq
 
+
 def main():
+
     parser = argparse.ArgumentParser()
     parser.add_argument('SORCE', type=str,
                         help='preprocessed source data path')
@@ -55,6 +56,8 @@ def main():
                         help="number of iteration to evaluate the model")
     parser.add_argument('--out', '-o', type=str, default='result',
                         help="directory to output the result")
+    parser.add_argument('--slack', action='store_false', default=False,
+                        help="Report training result to Slack")
     args = parser.parse_args()
 
     train_data = Seq2SeqDatasetBase(
@@ -107,7 +110,7 @@ def main():
 
     trainer.extend(
         extensions.PrintReport(
-            ['epoch', 'iteration', 'main/loss', 'main/prep',
+            ['epoch', 'main/loss', 'main/prep',
              'validation/main/loss', 'validation/main/prep',
              'validation/main/bleu', ' elapsed_time']
         ),
@@ -115,23 +118,25 @@ def main():
     )
     trainer.extend(
         extensions.LogReport(
-            ['epoch', 'iteration', 'main/loss', 'main/prep',
+            ['epoch', 'main/loss', 'main/prep',
              'validation/main/loss', 'validation/main/prep',
              'validation/main/bleu', 'elapsed_time']
         ),
         trigger=(args.log_interval, 'epoch')
     )
-    trainer.extend(
-        SlackNortifier(
-            ['epoch', 'iteration', 'main/loss', 'main/prep',
-             'validation/main/loss', 'validation/main/prep',
-             'validation/main/bleu', 'elapsed_time'],
-            username=save_dirs['base_dir'].name,
-            channel=SLACK_CHANNEL_NAME,
-            slack_url=SLACK_URL
+
+    if args.slack:
+        trainer.extend(
+            SlackNortifier(
+                ['epoch', 'main/loss', 'main/prep',
+                 'validation/main/loss', 'validation/main/prep',
+                 'validation/main/bleu', 'elapsed_time'],
+                SLACK_URL,
+                username=save_dirs['base_dir'].name,
+                channel=SLACK_REPORT_CHANNEL_NAME
             ),
-        trigger=(args.log_interval, 'epoch')
-    )
+            trigger=(args.log_interval, 'epoch')
+        )
     # trainer.extend(extensions.ProgressBar())
     trainer.extend(
         extensions.snapshot(
@@ -175,22 +180,19 @@ def main():
             source_sentence = ' '.join(test_data.source_index2token(source)[1:-1])
             target_sentence = ' '.join(test_data.target_index2token(target)[1:-1])
             result_sentence = ' '.join(test_data.target_index2token(result))
-            print('# source : ' + source_sentence)
-            print('# target : ' + target_sentence)
-            print('# result : ' + result_sentence)
 
-            p = Path(save_dirs['base_dir'])
-            if not p.exists():
-                p.make_dirs(parents=True)
-            p = p / 'test_translation.txt'
-            with open(p, 'a') as f:
-                f.write('epoch ')
-                f.write(str(trainer.updater.epoch))
-                f.write('\n')
-                f.write(source_sentence + '\n')
-                f.write(target_sentence + '\n')
-                f.write(result_sentence + '\n\n')
+            text = trainer.updater.epoch + '\n' + \
+                'source sentence: ' + source_sentence + '\n' + \
+                'target sentence: ' + target_sentence + '\n' + \
+                'result sentence: ' + result_sentence
 
+            if args.slack:
+                post2slack(
+                    text=text,
+                    username=save_dirs['base_dir'].name,
+                    channel=SLACK_TRANSLATION_CHANNEL_NAME,
+                    slack_url=SLACK_URL
+                )
         '''
         trainer.exnted(
             extensions.Evaluator(tesT_data, model, converter=convert),
