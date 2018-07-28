@@ -56,7 +56,7 @@ def main():
                         help="number of iteration to evaluate the model")
     parser.add_argument('--out', '-o', type=str, default='result',
                         help="directory to output the result")
-    parser.add_argument('--slack', action='store_false', default=False,
+    parser.add_argument('--slack', action='store_true', default=False,
                         help="Report training result to Slack")
     args = parser.parse_args()
 
@@ -171,6 +171,7 @@ def main():
             args.n_target_min_token,
             args.n_target_max_token,
         )
+        test_iter = chainer.iterators.SerialIterator(test_data, args.batchsize)
 
         @chainer.training.make_extension()
         def translate(trainer):
@@ -186,26 +187,39 @@ def main():
                 'target sentence: ' + target_sentence + '\n' + \
                 'result sentence: ' + result_sentence
 
-            if args.slack:
-                post2slack(
-                    text=text,
-                    username=save_dirs['base_dir'].name,
-                    channel=SLACK_TRANSLATION_CHANNEL_NAME,
-                    slack_url=SLACK_URL
-                )
-        '''
-        trainer.exnted(
-            extensions.Evaluator(tesT_data, model, converter=convert),
-            trigger=(args.validation_interval, 'epoch'))
-        '''
+            post2slack(
+                text=text,
+                username=save_dirs['base_dir'].name,
+                channel=SLACK_TRANSLATION_CHANNEL_NAME,
+                slack_url=SLACK_URL
+            )
+
         trainer.extend(
-            translate,
+            extensions.Evaluator(
+                test_iter,
+                model,
+                converter=convert,
+                device=args.gpu
+            ),
             trigger=(args.validation_interval, 'epoch')
         )
+
+        if args.slack:
+            trainer.extend(
+                translate,
+                trigger=(args.validation_interval, 'epoch')
+            )
+
         trainer.extend(
             CalculateBleu(
-                model, test_data, 'validation/main/bleu', device=args.gpu),
-            trigger=(args.validation_interval, 'epoch'))
+                model,
+                test_data,
+                'validation/main/bleu',
+                device=args.gpu,
+                n_grams=2
+            ),
+            trigger=(args.validation_interval, 'epoch')
+        )
 
     print('start training')
     trainer.run()
