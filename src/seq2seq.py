@@ -181,7 +181,7 @@ def main():
             target_sentence = ' '.join(test_data.target_index2token(target)[1:-1])
             result_sentence = ' '.join(test_data.target_index2token(result))
 
-            text = trainer.updater.epoch + '\n' + \
+            text = 'epoch: ' + str(trainer.updater.epoch) + '\n' + \
                 'source sentence: ' + source_sentence + '\n' + \
                 'target sentence: ' + target_sentence + '\n' + \
                 'result sentence: ' + result_sentence
