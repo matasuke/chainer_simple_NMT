@@ -201,6 +201,7 @@ def main():
                 converter=convert,
                 device=args.gpu
             ),
+            name='validation',
             trigger=(args.validation_interval, 'epoch')
         )
 
