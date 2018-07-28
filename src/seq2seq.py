@@ -101,7 +101,7 @@ def main():
     optimizer.setup(model)
 
     # setup iterator
-    train_iter = chainer.iterators.SerialIterator(train_data, args.batchsize, repeat=False)
+    train_iter = chainer.iterators.SerialIterator(train_data, args.batchsize)
 
     # setup updater and trainer
     updater = training.updaters.StandardUpdater(
@@ -171,7 +171,10 @@ def main():
             args.n_target_min_token,
             args.n_target_max_token,
         )
-        test_iter = chainer.iterators.SerialIterator(test_data, args.batchsize)
+        test_iter = chainer.iterators.SerialIterator(test_data,
+                                                     args.batchsize,
+                                                     repeat=False,
+                                                     shuffle=False)
 
         @chainer.training.make_extension()
         def translate(trainer):
@@ -201,7 +204,6 @@ def main():
                 converter=convert,
                 device=args.gpu
             ),
-            name='validation',
             trigger=(args.validation_interval, 'epoch')
         )
 
