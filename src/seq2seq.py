@@ -101,7 +101,7 @@ def main():
     optimizer.setup(model)
 
     # setup iterator
-    train_iter = chainer.iterators.SerialIterator(train_data, args.batchsize)
+    train_iter = chainer.iterators.SerialIterator(train_data, args.batchsize, repeat=False)
 
     # setup updater and trainer
     updater = training.updaters.StandardUpdater(
