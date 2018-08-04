@@ -7,8 +7,8 @@ matplotlib.use('Agg')
 
 import chainer
 from chainer.backends import cuda
-from chainer import training
 from chainer.training import extensions
+from chainer import training
 from chainer import serializers
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
@@ -25,7 +25,6 @@ def get_arguments():
     epoch = 30
     unit_size = 512
     num_layer = 3
-    generation_limit = 50
     source_min_token = 1
     source_max_token = 50
     target_min_token = 1
@@ -36,12 +35,16 @@ def get_arguments():
     nortify_to_slack = False
 
     parser = argparse.ArgumentParser()
-    parser.add_argument()
     parser.add_argument("SOURCE", type=str,
                         help="path to source dataset")
     parser.add_argument('TARGET', type=str,
                         help='path to target dataset')
-    parser.add_argument("--mode", metavar='INT', type=str, default='train',
+    parser.add_argument('SOURCE_VOCAB', type=str,
+                        help="path to source vocaburaly dict")
+    parser.add_argument('TARGET_VOCAB', type=str,
+                        help="path to target vocaburaly dict")
+    parser.add_argument("--mode", metavar='INT', type=str,
+                        default='train', choices=['train', 'reuse'],
                         help="type of using model, 'train', 'reuse'")
     parser.add_argument('--validation_source', metavar='str', type=str, default='',
                         help='path to validation source dataste')
@@ -53,40 +56,43 @@ def get_arguments():
                         help="number of training epoch (default: %(default)d")
     parser.add_argument('--gpu', '-g', metavar="INT", type=int, default=-1,
                         help="GPU ID (default: %(default)d")
-    parser.add_argument('--reuse', '-r', metaver='str', type=str, default='',
-                        help="reuse the training from snapshot")
-    parser.add_argument('--unit', '-u', metaver='INT', type=int, default=unit_size,
-                        help="hidden layer size (defalt: %(default)d")
+    parser.add_argument('--unit', '-u', metavar='INT', type=int, default=unit_size,
+                        help="hidden layer size (defalt: %(default)d)")
     parser.add_argument('--layer', '-l', metavar='INT', type=int, default=num_layer,
-                        help="number of layers (default: %(default)d")
-    parser.add_argument('--n_source_min_token', metavar='INT', type=int, default=source_min_token,
-                        help="number of min tokens in source sentences (defalt: %(default)d")
-    parser.add_argument('--n_source_max_token', metavar='INT', type=int, default=source_max_token,
-                        help="number of max tokens in source sentences (defalt: %(default)d")
-    parser.add_argument('--n_target_min_token', metavar='INT', type=int, default=target_min_token,
-                        help="number of min tokens in target sentences (defalt: %(default)d")
-    parser.add_argument('--n_target_max_token', metavar='INT', type=int, default=target_max_token,
-                        help="number of max tokens in target sentences (defalt: %(default)d")
+                        help="number of layers (default: %(default)d)")
+    parser.add_argument('--source_min_token', metavar='INT', type=int, default=source_min_token,
+                        help="number of min tokens in source sentences (defalt: %(default)d)")
+    parser.add_argument('--source_max_token', metavar='INT', type=int, default=source_max_token,
+                        help="number of max tokens in source sentences (defalt: %(default)d)")
+    parser.add_argument('--target_min_token', metavar='INT', type=int, default=target_min_token,
+                        help="number of min tokens in target sentences (defalt: %(default)d)")
+    parser.add_argument('--target_max_token', metavar='INT', type=int, default=target_max_token,
+                        help="number of max tokens in target sentences (defalt: %(default)d)")
     parser.add_argument('--log_interval', metavar='INT', type=int, default=log_interval,
-                        help="number of iteration to show log (defalt: %(default)d")
+                        help="number of iteration to show log (defalt: %(default)d~")
     parser.add_argument('--validation_interval', metavar='INT',
                         type=int, default=validation_interval,
-                        help="number of iteration to evaluate the model (defalt: %(default)d")
+                        help="number of iteration to evaluate the model (defalt: %(default)d)")
     parser.add_argument('--out', '-o', metavar='str', type=str, default=out_dir,
-                        help="directory to output the result (defalt: %(default)d")
+                        help="directory to output the result (defalt: %(default)s)")
     parser.add_argument('--slack', action='store_true', default=nortify_to_slack,
-                        help="Report training result to Slack (defalt: %(default)d")
+                        help="Report training result to Slack (defalt: %(default)s)\
+                              If you want to use this options. you have to set Environment Variable\
+                              written in src/common/ENV.py")
     args = parser.parse_args()
 
     try:
-        if args.mode not in ('train', 'reuse'):
-            msg = "you have to choose either 'train' or 'reuse'"
-            raise ValueError(msg)
-        if not Path(args.SORUCE).exists():
+        if not Path(args.SOURCE).exists():
             msg = "source dataset file %s is not found" % args.SOURCE
             raise FileNotFoundError(msg)
         if not Path(args.TARGET).exists():
             msg = "target datast file %s is not found" % args.TARGET
+            raise FileNotFoundError(msg)
+        if not Path(args.SOURCE_VOCAB).exists():
+            msg = "source vocab file %s is not found" % args.SOURCE_VOCAB
+            raise FileNotFoundError(msg)
+        if not Path(args.TARGET_VOCAB).exists():
+            msg = "target vocab file %s is not found" % args.TARGET_VOCAB
             raise FileNotFoundError(msg)
         if not Path(args.validation_source).exists():
             msg = "validation source datast file %s is not found" % args.validation_source
@@ -160,12 +166,14 @@ def main():
     args = get_arguments()
 
     train_data = Seq2SeqDatasetBase(
-        args.SORCE,
+        args.SOURCE,
         args.TARGET,
-        args.n_source_min_token,
-        args.n_source_max_token,
-        args.n_target_min_token,
-        args.n_target_max_token
+        args.SOURCE_VOCAB,
+        args.TARGET_VOCAB,
+        args.source_min_token,
+        args.source_max_token,
+        args.target_min_token,
+        args.target_max_token
     )
 
     # print dataset configurations
@@ -173,7 +181,7 @@ def main():
     for key, value in dataset_configurations.items():
         print(key + '\t' + str(value))
 
-    # make configuration file and save it
+    # make configuration file and save them.
     record_settings(args.out, args, dataset_configurations)
 
     # setup model
@@ -189,7 +197,7 @@ def main():
         cuda.get_device(args.gpu).use()
         model.to_gpu(args.gpu)
 
-    if args.model == 'reuse':
+    if args.mode == 'reuse':
         serializers.load_npz(args.resume, model)
 
     # setup optimizer
@@ -228,7 +236,7 @@ def main():
                  'validation/main/loss', 'validation/main/prep',
                  'validation/main/bleu', 'elapsed_time'],
                 SLACK_URL,
-                username=save_dirs['base_dir'].name,
+                username=args.out,
                 channel=SLACK_REPORT_CHANNEL_NAME
             ),
             trigger=(args.log_interval, 'epoch')
@@ -262,11 +270,14 @@ def main():
         test_data = Seq2SeqDatasetBase(
             args.validation_source,
             args.validation_target,
-            args.n_source_min_token,
-            args.n_source_max_token,
-            args.n_target_min_token,
-            args.n_target_max_token,
+            args.SOURCE_VOCAB,
+            args.TARGET_VOCAB,
+            args.source_min_token,
+            args.source_max_token,
+            args.target_min_token,
+            args.target_max_token,
         )
+
         test_iter = chainer.iterators.SerialIterator(test_data,
                                                      args.batchsize,
                                                      repeat=False,
@@ -288,7 +299,7 @@ def main():
 
             post2slack(
                 text=text,
-                username=save_dirs['base_dir'].name,
+                username=args.out,
                 channel=SLACK_TRANSLATION_CHANNEL_NAME,
                 slack_url=SLACK_URL
             )
@@ -323,8 +334,8 @@ def main():
     print('start training')
     trainer.run()
 
-    serializers.save_npz(save_dirs['final_result'] / 'model_final', model)
-    serializers.save_npz(save_dirs['final_result'] / 'optimizer_final', optimizer)
+    serializers.save_npz(args.out / 'model_final', model)
+    serializers.save_npz(args.out / 'optimizer_final', optimizer)
 
 
 if __name__ == '__main__':
