@@ -1,4 +1,6 @@
 import argparse
+import sys
+from pathlib import Path
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -11,54 +13,151 @@ from chainer import serializers
 
 from Seq2SeqDataset import Seq2SeqDatasetBase
 from common.record import record_settings
-from common.make_dirs import create_save_dirs
-from common.convert import convert
 from common.ENV import SLACK_URL, SLACK_REPORT_CHANNEL_NAME, SLACK_TRANSLATION_CHANNEL_NAME
 from extensions.SlackNortifier import SlackNortifier, post2slack
 from extensions.CalculateBleu import CalculateBleu
 from net import seq2seq
 
 
-def main():
+def get_arguments():
+
+    batchsize = 64
+    epoch = 30
+    unit_size = 512
+    num_layer = 3
+    generation_limit = 50
+    source_min_token = 1
+    source_max_token = 50
+    target_min_token = 1
+    target_max_token = 50
+    log_interval = 1
+    validation_interval = 10
+    out_dir = 'result'
+    nortify_to_slack = False
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('SORCE', type=str,
-                        help='preprocessed source data path')
+    parser.add_argument()
+    parser.add_argument("SOURCE", type=str,
+                        help="path to source dataset")
     parser.add_argument('TARGET', type=str,
-                        help='preprocessed target data path')
-    parser.add_argument('--validation_source', type=str, default='',
-                        help='preprocessed validation sorce data path')
-    parser.add_argument('--validation_target', type=str, default='',
-                        help="preprocessed validation target data path")
-    parser.add_argument('--batchsize', '-b', type=int, default=64,
-                        help="numbe of sentence pairs in each mini-batch")
-    parser.add_argument('--epoch', '-e', type=int, default=20,
-                        help="number of epoch to train")
-    parser.add_argument('--gpu', '-g', type=int, default=-1,
-                        help="GPU ID(negative value indicates CPU)")
-    parser.add_argument('--reuse', '-r', type=str, default='',
+                        help='path to target dataset')
+    parser.add_argument("--mode", metavar='INT', type=str, default='train',
+                        help="type of using model, 'train', 'reuse'")
+    parser.add_argument('--validation_source', metavar='str', type=str, default='',
+                        help='path to validation source dataste')
+    parser.add_argument('--validation_target', metavar='str', type=str, default='',
+                        help='path to validation target dataset')
+    parser.add_argument('--batchsize', '-b', metavar='INT', type=int, default=batchsize,
+                        help="minibatch size (default: %(default)d")
+    parser.add_argument('--epoch', '-e', metavar='INT', type=int, default=epoch,
+                        help="number of training epoch (default: %(default)d")
+    parser.add_argument('--gpu', '-g', metavar="INT", type=int, default=-1,
+                        help="GPU ID (default: %(default)d")
+    parser.add_argument('--reuse', '-r', metaver='str', type=str, default='',
                         help="reuse the training from snapshot")
-    parser.add_argument('--unit', '-u', type=int, default=2048,
-                        help="number of units")
-    parser.add_argument('--layer', '-l', type=int, default=3,
-                        help="number of layers")
-    parser.add_argument('--n_source_min_token', type=int, default=1,
-                        help="number of min tokens in source sentences")
-    parser.add_argument('--n_source_max_token', type=int, default=50,
-                        help="number of max tokens in source sentences")
-    parser.add_argument('--n_target_min_token', type=int, default=1,
-                        help="number of min tokens in target sentences")
-    parser.add_argument('--n_target_max_token', type=int, default=50,
-                        help="number of max tokens in target sentences")
-    parser.add_argument('--log_interval', type=int, default=1,
-                        help="number of iteration to show log")
-    parser.add_argument('--validation_interval', type=int, default=1,
-                        help="number of iteration to evaluate the model")
-    parser.add_argument('--out', '-o', type=str, default='result',
-                        help="directory to output the result")
-    parser.add_argument('--slack', action='store_true', default=False,
-                        help="Report training result to Slack")
+    parser.add_argument('--unit', '-u', metaver='INT', type=int, default=unit_size,
+                        help="hidden layer size (defalt: %(default)d")
+    parser.add_argument('--layer', '-l', metavar='INT', type=int, default=num_layer,
+                        help="number of layers (default: %(default)d")
+    parser.add_argument('--n_source_min_token', metavar='INT', type=int, default=source_min_token,
+                        help="number of min tokens in source sentences (defalt: %(default)d")
+    parser.add_argument('--n_source_max_token', metavar='INT', type=int, default=source_max_token,
+                        help="number of max tokens in source sentences (defalt: %(default)d")
+    parser.add_argument('--n_target_min_token', metavar='INT', type=int, default=target_min_token,
+                        help="number of min tokens in target sentences (defalt: %(default)d")
+    parser.add_argument('--n_target_max_token', metavar='INT', type=int, default=target_max_token,
+                        help="number of max tokens in target sentences (defalt: %(default)d")
+    parser.add_argument('--log_interval', metavar='INT', type=int, default=log_interval,
+                        help="number of iteration to show log (defalt: %(default)d")
+    parser.add_argument('--validation_interval', metavar='INT',
+                        type=int, default=validation_interval,
+                        help="number of iteration to evaluate the model (defalt: %(default)d")
+    parser.add_argument('--out', '-o', metavar='str', type=str, default=out_dir,
+                        help="directory to output the result (defalt: %(default)d")
+    parser.add_argument('--slack', action='store_true', default=nortify_to_slack,
+                        help="Report training result to Slack (defalt: %(default)d")
     args = parser.parse_args()
+
+    try:
+        if args.mode not in ('train', 'reuse'):
+            msg = "you have to choose either 'train' or 'reuse'"
+            raise ValueError(msg)
+        if not Path(args.SORUCE).exists():
+            msg = "source dataset file %s is not found" % args.SOURCE
+            raise FileNotFoundError(msg)
+        if not Path(args.TARGET).exists():
+            msg = "target datast file %s is not found" % args.TARGET
+            raise FileNotFoundError(msg)
+        if not Path(args.validation_source).exists():
+            msg = "validation source datast file %s is not found" % args.validation_source
+            raise FileNotFoundError(msg)
+        if not Path(args.validation_target).exists():
+            msg = "validation target datast file %s is not found" % args.validation_target
+            raise FileNotFoundError(msg)
+        if args.batchsize < 1:
+            msg = "--batchsize has to be >= 1"
+            ValueError(msg)
+        if args.epoch < 1:
+            msg = "--epoch has to be >= 1"
+            ValueError(msg)
+        if args.unit < 1:
+            msg = "--unit has to be >= 1"
+            ValueError(msg)
+        if args.layer < 1:
+            msg = "--layer has to be >= 1"
+            ValueError(msg)
+        if args.source_min_token < 1:
+            msg = "--source_min_token has to be >= 1"
+            ValueError(msg)
+        if args.source_max_token <= args.source_min_token:
+            msg = "--source_max_token has to be >= --source_min_token"
+            ValueError(msg)
+        if args.target_min_token < 1:
+            msg = "--target_min_token has to be >= 1"
+            ValueError(msg)
+        if args.target_max_token <= args.target_min_token:
+            msg = "--taget_max_token has to be >= --target_min_token"
+            ValueError(msg)
+        if args.log_interval < 1:
+            msg = "--log_interval has to be >= 1"
+            ValueError(msg)
+        if args.validation_interval < 1:
+            msg = "--validation_interval has to be >= 1"
+            ValueError(msg)
+    except Exception as ex:
+        parser.print_usage(file=sys.stderr)
+        print(ex, file=sys.stderr)
+        sys.exit()
+
+    for (key, value) in vars(args).items():
+        print("%s : %s" % (key, value))
+
+    return args
+
+
+def convert(batch, device):
+    """convert batch for updater to fit"""
+    def to_device_batch(batch):
+        if device is None:
+            return batch
+        elif device < 0:
+            return [chainer.dataset.to_device(device, x) for x in batch]
+        else:
+            xp = cuda.cupy.get_array_module(*batch)
+            concat = xp.concatenate(batch, axis=0)
+            sections = np.cumsum([len(x) for x in batch[:-1]], dtype=np.int32)
+            concat_dev = chainer.dataset.to_device(device, concat)
+            batch_dev = cuda.cupy.split(concat_dev, sections)
+
+            return batch_dev
+
+    return {'xs': to_device_batch([x for x, _ in batch]),
+            'ys': to_device_batch([y for _, y in batch])}
+
+
+def main():
+
+    args = get_arguments()
 
     train_data = Seq2SeqDatasetBase(
         args.SORCE,
@@ -69,16 +168,13 @@ def main():
         args.n_target_max_token
     )
 
-    # make output dirs
-    save_dirs = create_save_dirs(args)
-
     # print dataset configurations
     dataset_configurations = train_data.get_configurations
     for key, value in dataset_configurations.items():
         print(key + '\t' + str(value))
 
     # make configuration file and save it
-    record_settings(save_dirs['log_dir'], args, dataset_configurations)
+    record_settings(args.out, args, dataset_configurations)
 
     # setup model
     model = seq2seq(
@@ -93,7 +189,7 @@ def main():
         cuda.get_device(args.gpu).use()
         model.to_gpu(args.gpu)
 
-    if args.reuse:
+    if args.model == 'reuse':
         serializers.load_npz(args.resume, model)
 
     # setup optimizer
