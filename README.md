@@ -50,7 +50,7 @@ Now you have 6 files.
 # Usage
 You can start training by train.sh
 
-'''
+```
 sh ./train.sh
-'''
+```
 
