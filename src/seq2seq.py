@@ -325,8 +325,9 @@ def main():
                 model,
                 test_data,
                 'validation/main/bleu',
+                batch=args.batchsize,
                 device=args.gpu,
-                n_grams=2
+                n_grams=4
             ),
             trigger=(args.validation_interval, 'epoch')
         )
@@ -334,8 +335,8 @@ def main():
     print('start training')
     trainer.run()
 
-    serializers.save_npz(args.out / 'model_final', model)
-    serializers.save_npz(args.out / 'optimizer_final', optimizer)
+    serializers.save_npz(Path(args.out) / 'model_final', model)
+    serializers.save_npz(Path(args.out) / 'optimizer_final', optimizer)
 
 
 if __name__ == '__main__':
