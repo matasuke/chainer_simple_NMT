@@ -6,5 +6,5 @@ python src/seq2seq.py \
         --validation_source data/ja_dataset_dev.pkl \
         --validation_target data/en_dataset_dev.pkl \
         --gpu 0 \
-        --validation_interval 1
+        --validation_interval 1 \
         --slack

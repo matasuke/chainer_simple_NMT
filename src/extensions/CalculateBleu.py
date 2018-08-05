@@ -49,4 +49,4 @@ class CalculateBleu(chainer.training.Extension):
             smoothing_function=bleu_score.SmoothingFunction().method1
         )
 
-        chainer.report({self.key: bleu})
+        chainer.report({self.key: round(bleu*100, 1)})
